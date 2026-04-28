@@ -163,6 +163,8 @@ Each per-event object must contain exactly one of `value` or `command`.
 | `{time}` | ISO 8601 timestamp |
 | `{project}` | Project directory basename |
 | `{session_id}` | Session ID (empty if unavailable) |
+| `{session_title}` | Session title (empty if unavailable) |
+| `{last_response}` | Last agent response text (empty if unavailable) |
 | `{error}` | Error message (empty if not an error event) |
 | `{permission_type}` | Permission type (empty if not a permission event) |
 | `{permission_patterns}` | Comma-separated patterns (empty if not a permission event) |
@@ -174,9 +176,9 @@ defaults are used:
 
 | Event | Default Title | Default Message |
 |---|---|---|
-| `session.idle` | `Agent Idle` | `The agent has finished and is waiting for input.` |
-| `session.error` | `Agent Error` | `An error has occurred. Check the session for details.` |
-| `permission.asked` | `Permission Asked` | `The agent needs permission to continue. Review and respond.` |
+| `session.idle` | `Agent Idle` | `Session: {session_title}\n{last_response}` |
+| `session.error` | `Agent Error` | `Session: {session_title}\n{error}` |
+| `permission.asked` | `Permission Asked` | `Session: {session_title}\n{permission_type}: {permission_patterns}` |
 
 ### Example Configurations
 

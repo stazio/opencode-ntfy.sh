@@ -18,10 +18,11 @@ const DEFAULT_TITLES: Record<NotificationEvent, string> = {
 };
 
 const DEFAULT_MESSAGES: Record<NotificationEvent, string> = {
-  "session.idle": "The agent has finished and is waiting for input.",
-  "session.error": "An error has occurred. Check the session for details.",
+  "session.idle":
+    "Session: {session_title}\n{last_response}",
+  "session.error": "Session: {session_title}\n{error}",
   "permission.asked":
-    "The agent needs permission to continue. Review and respond.",
+    "Session: {session_title}\n{permission_title}",
 };
 
 const DEFAULT_TAGS: Record<NotificationEvent, string> = {
@@ -45,7 +46,7 @@ async function resolveContent(
 ): Promise<string> {
   const template = templateMap?.[event];
   if (!template) {
-    return defaults[event] ?? "";
+    return renderTemplate(defaults[event] ?? "", context);
   }
   if (isValueTemplate(template)) {
     return renderTemplate(template.value, context);
@@ -88,6 +89,7 @@ export function createNtfyBackend(
         Priority: config.priority,
         Tags: tags,
         "X-Icon": config.iconUrl,
+        Markdown: "true",
         ...(config.token
           ? { Authorization: `Bearer ${config.token}` }
           : {}),

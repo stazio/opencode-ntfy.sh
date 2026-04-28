@@ -192,8 +192,30 @@ describe("createNtfyBackend", () => {
 
     const captured = getCapturedRequest();
     expect(captured).not.toBeNull();
+    expect(captured!.body).toBe("Session: \n");
+  });
+
+  it("should include session title and last response in idle message when available", async () => {
+    server.use(captureHandler("https://ntfy.sh/my-topic"));
+
+    const backend = createNtfyBackend(makeConfig());
+    await backend.send(
+      makeContext({
+        event: "session.idle",
+        metadata: {
+          sessionId: "sess-123",
+          projectName: "my-project",
+          timestamp: "2026-01-01T00:00:00.000Z",
+          sessionTitle: "My Session Title",
+          lastResponse: "Here's the last response.",
+        },
+      })
+    );
+
+    const captured = getCapturedRequest();
+    expect(captured).not.toBeNull();
     expect(captured!.body).toBe(
-      "The agent has finished and is waiting for input."
+      "Session: My Session Title\nHere's the last response."
     );
   });
 
@@ -201,26 +223,42 @@ describe("createNtfyBackend", () => {
     server.use(captureHandler("https://ntfy.sh/my-topic"));
 
     const backend = createNtfyBackend(makeConfig());
-    await backend.send(makeContext({ event: "session.error" }));
+    await backend.send(
+      makeContext({
+        event: "session.error",
+        metadata: {
+          sessionId: "sess-123",
+          projectName: "my-project",
+          timestamp: "2026-01-01T00:00:00.000Z",
+          error: "something broke",
+        },
+      })
+    );
 
     const captured = getCapturedRequest();
     expect(captured).not.toBeNull();
-    expect(captured!.body).toBe(
-      "An error has occurred. Check the session for details."
-    );
+    expect(captured!.body).toBe("Session: \nsomething broke");
   });
 
   it("should produce permission message body for permission.asked events", async () => {
     server.use(captureHandler("https://ntfy.sh/my-topic"));
 
     const backend = createNtfyBackend(makeConfig());
-    await backend.send(makeContext({ event: "permission.asked" }));
+    await backend.send(
+      makeContext({
+        event: "permission.asked",
+        metadata: {
+          sessionId: "sess-123",
+          projectName: "my-project",
+          timestamp: "2026-01-01T00:00:00.000Z",
+          permissionTitle: "Read /etc/passwd",
+        },
+      })
+    );
 
     const captured = getCapturedRequest();
     expect(captured).not.toBeNull();
-    expect(captured!.body).toBe(
-      "The agent needs permission to continue. Review and respond."
-    );
+    expect(captured!.body).toBe("Session: \nRead /etc/passwd");
   });
 
   it("should use the default tag 'hourglass_done' for session.idle events", async () => {
@@ -269,6 +307,17 @@ describe("createNtfyBackend", () => {
     expect(captured!.headers.get("X-Icon")).toBe(
       "https://example.com/custom-icon.png"
     );
+  });
+
+  it("should include Markdown header set to true", async () => {
+    server.use(captureHandler("https://ntfy.sh/my-topic"));
+
+    const backend = createNtfyBackend(makeConfig());
+    await backend.send(makeContext());
+
+    const captured = getCapturedRequest();
+    expect(captured).not.toBeNull();
+    expect(captured!.headers.get("Markdown")).toBe("true");
   });
 
   it("should not include Authorization header when token is not set", async () => {
@@ -447,9 +496,7 @@ describe("createNtfyBackend", () => {
 
       const captured = getCapturedRequest();
       expect(captured).not.toBeNull();
-      expect(captured!.body).toBe(
-        "The agent has finished and is waiting for input."
-      );
+      expect(captured!.body).toBe("Session: \n");
     });
 
     it("should replace unrecognized placeholders with empty strings", async () => {
